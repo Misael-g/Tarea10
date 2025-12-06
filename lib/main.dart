@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'screens/home_screen.dart';
+import 'package:provider/provider.dart';
+import 'providers/carrito_provider.dart';
+import 'screens/catalogo_screen.dart';
 
-// Run | Debug | Profile
 void main() {
   runApp(const MyApp());
 }
@@ -11,21 +12,25 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      // Quita el banner de "DEBUG" en la esquina
-      debugShowCheckedModeBanner: false,
-
-      // Título de la aplicación
-      title: 'Mi Portafolio',
-
-      // Tema de colores de la app
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        useMaterial3: true,
-      ), // ThemeData
-
-      // Pantalla inicial
-      home: const HomeScreen(),
-    ); // MaterialApp
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => CarritoProvider()),
+      ],
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'Tienda Online',
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+          useMaterial3: true,
+          appBarTheme: AppBarTheme(
+            elevation: 2,
+            centerTitle: false,
+            backgroundColor: Colors.blue[700],
+            foregroundColor: Colors.white,
+          ),
+        ),
+        home: const CatalogoScreen(),
+      ),
+    );
   }
 }
