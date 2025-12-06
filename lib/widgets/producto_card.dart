@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/producto.dart';
 import '../providers/carrito_provider.dart';
+import '../screens/carrito_screen.dart';
 
 class ProductoCard extends StatelessWidget {
   final Producto producto;
