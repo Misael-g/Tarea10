@@ -241,9 +241,11 @@ class ProductoCard extends StatelessWidget {
                   child: const Text('Cancelar'),
                 ),
                 ElevatedButton(
-                  onPressed: () async {
+                  onPressed: () {
+                    // Cerrar el diálogo de selección
                     Navigator.pop(dialogContext);
-                    await _agregarAlCarrito(context, cantidad);
+                    // Agregar al carrito (pasando el context original del Scaffold)
+                    _agregarAlCarrito(context, cantidad);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue[700],
@@ -260,61 +262,69 @@ class ProductoCard extends StatelessWidget {
   }
 
   Future<void> _agregarAlCarrito(BuildContext context, int cantidad) async {
+    // Obtener el carrito provider
     final carrito = Provider.of<CarritoProvider>(context, listen: false);
     
-    // Mostrar indicador de carga
+    // Obtener el ScaffoldMessenger ANTES de cualquier operación asíncrona
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    
+    // Mostrar diálogo de carga
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const Center(
-        child: CircularProgressIndicator(),
-      ),
+      builder: (BuildContext loadingContext) {
+        return WillPopScope(
+          onWillPop: () async => false,
+          child: const Center(
+            child: CircularProgressIndicator(),
+          ),
+        );
+      },
     );
     
+    // Intentar agregar el producto
     final success = await carrito.agregarProducto(producto, cantidad);
     
-    // Cerrar indicador de carga
-    if (context.mounted) {
-      Navigator.pop(context);
-    }
+    // Cerrar el diálogo de carga usando el Navigator
+    navigator.pop();
     
     // Mostrar resultado
-    if (context.mounted) {
-      if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${producto.titulo} agregado al carrito'),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 2),
-            action: SnackBarAction(
-              label: 'Ver carrito',
-              textColor: Colors.white,
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const CarritoScreen(),
-                  ),
-                );
-              },
-            ),
+    if (success) {
+      // Éxito
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text('${producto.titulo} agregado al carrito'),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 2),
+          action: SnackBarAction(
+            label: 'Ver carrito',
+            textColor: Colors.white,
+            onPressed: () {
+              navigator.push(
+                MaterialPageRoute(
+                  builder: (context) => const CarritoScreen(),
+                ),
+              );
+            },
           ),
-        );
-      } else {
-        // El error se muestra automáticamente por el provider
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(carrito.errorMessage ?? 'Error al agregar producto'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
-            action: SnackBarAction(
-              label: 'Reintentar',
-              textColor: Colors.white,
-              onPressed: () => _mostrarDialogoAgregar(context),
-            ),
+        ),
+      );
+    } else {
+      // Error
+      final errorMsg = carrito.errorMessage ?? 'Error al agregar producto';
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text(errorMsg),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+          action: SnackBarAction(
+            label: 'Reintentar',
+            textColor: Colors.white,
+            onPressed: () => _mostrarDialogoAgregar(context),
           ),
-        );
-      }
+        ),
+      );
     }
   }
 }
