@@ -4,8 +4,22 @@ import '../providers/carrito_provider.dart';
 import '../widgets/carrito_item_widget.dart';
 import '../widgets/resumen_carrito.dart';
 
-class CarritoScreen extends StatelessWidget {
+class CarritoScreen extends StatefulWidget {
   const CarritoScreen({super.key});
+
+  @override
+  State<CarritoScreen> createState() => _CarritoScreenState();
+}
+
+class _CarritoScreenState extends State<CarritoScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Recargar carrito al entrar
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<CarritoProvider>(context, listen: false).cargarCarrito();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -104,16 +118,19 @@ class CarritoScreen extends StatelessWidget {
           return Column(
             children: [
               Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: carrito.items.length,
-                  itemBuilder: (context, index) {
-                    final item = carrito.items[index];
-                    return CarritoItemWidget(
-                      item: item,
-                      key: ValueKey(item.producto.id),
-                    );
-                  },
+                child: RefreshIndicator(
+                  onRefresh: () => carrito.cargarCarrito(),
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: carrito.items.length,
+                    itemBuilder: (context, index) {
+                      final item = carrito.items[index];
+                      return CarritoItemWidget(
+                        item: item,
+                        key: ValueKey(item.producto.id),
+                      );
+                    },
+                  ),
                 ),
               ),
               const ResumenCarrito(),
@@ -191,38 +208,93 @@ class CarritoScreen extends StatelessWidget {
     );
   }
 
-  void _procesarCompra(BuildContext context) {
+  void _procesarCompra(BuildContext context) async {
     final carrito = Provider.of<CarritoProvider>(context, listen: false);
     
-    showDialog(
+    // Mostrar diálogo de confirmación
+    final confirmar = await showDialog<bool>(
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Text('Compra Procesada'),
+          title: const Text('Confirmar Compra'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('¡Gracias por tu compra!'),
-              const SizedBox(height: 16),
-              Text('Total: \$${carrito.total.toStringAsFixed(2)}'),
               Text('Items: ${carrito.cantidadTotal}'),
+              const SizedBox(height: 8),
+              Text(
+                'Total: \$${carrito.total.toStringAsFixed(2)}',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text('¿Deseas procesar esta compra?'),
             ],
           ),
           actions: [
             TextButton(
-              onPressed: () async {
-                Navigator.pop(dialogContext);
-                await carrito.vaciarCarrito();
-                if (context.mounted) {
-                  Navigator.pop(context);
-                }
-              },
-              child: const Text('Aceptar'),
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green[600],
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Confirmar'),
             ),
           ],
         );
       },
     );
+
+    if (confirmar != true) return;
+
+    // Procesar la compra
+    final resultado = await carrito.procesarCompra();
+
+    if (!context.mounted) return;
+
+    if (resultado != null) {
+      showDialog(
+        context: context,
+        builder: (BuildContext dialogContext) {
+          return AlertDialog(
+            title: const Text('¡Compra Exitosa!'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(
+                  Icons.check_circle,
+                  color: Colors.green,
+                  size: 60,
+                ),
+                const SizedBox(height: 16),
+                Text('Orden #${resultado['orden_id']}'),
+                const SizedBox(height: 8),
+                Text('Total: \$${resultado['total'].toStringAsFixed(2)}'),
+                Text('Items: ${resultado['items_count']}'),
+                const SizedBox(height: 16),
+                const Text('¡Gracias por tu compra!'),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                  Navigator.pop(context); // Volver al catálogo
+                },
+                child: const Text('Aceptar'),
+              ),
+            ],
+          );
+        },
+      );
+    }
   }
 }

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../data/productos_mock.dart';
 import '../models/producto.dart';
 import '../providers/carrito_provider.dart';
+import '../providers/productos_provider.dart';
 import '../widgets/producto_card.dart';
 import 'carrito_screen.dart';
 
@@ -15,15 +15,42 @@ class CatalogoScreen extends StatefulWidget {
 
 class _CatalogoScreenState extends State<CatalogoScreen> {
   String? _categoriaSeleccionada;
-  final List<Producto> _productos = ProductosMock.obtenerProductos();
+  List<Producto> _productosFiltrados = [];
+  bool _isInitialized = false;
 
-  List<Producto> get _productosFiltrados {
-    if (_categoriaSeleccionada == null) {
-      return _productos;
-    }
-    return _productos
-        .where((p) => p.categoria == _categoriaSeleccionada)
-        .toList();
+  @override
+  void initState() {
+    super.initState();
+    _cargarDatos();
+  }
+
+  Future<void> _cargarDatos() async {
+    final productosProvider = Provider.of<ProductosProvider>(context, listen: false);
+    final carritoProvider = Provider.of<CarritoProvider>(context, listen: false);
+    
+    await Future.wait([
+      productosProvider.cargarProductos(),
+      productosProvider.cargarCategorias(),
+      carritoProvider.cargarCarrito(),
+    ]);
+    
+    setState(() {
+      _isInitialized = true;
+      _productosFiltrados = productosProvider.productos;
+    });
+  }
+
+  void _filtrarProductos() {
+    final productosProvider = Provider.of<ProductosProvider>(context, listen: false);
+    setState(() {
+      if (_categoriaSeleccionada == null) {
+        _productosFiltrados = productosProvider.productos;
+      } else {
+        _productosFiltrados = productosProvider.productos
+            .where((p) => p.categoria == _categoriaSeleccionada)
+            .toList();
+      }
+    });
   }
 
   @override
@@ -57,7 +84,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                       top: 8,
                       child: Container(
                         padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                           color: Colors.red,
                           shape: BoxShape.circle,
                         ),
@@ -83,51 +110,87 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
           const SizedBox(width: 8),
         ],
       ),
-      body: Column(
-        children: [
-          // Filtro de categorías
-          _buildFiltroCategories(),
-          
-          // Lista de productos
-          Expanded(
-            child: _productosFiltrados.isEmpty
-                ? Center(
+      body: !_isInitialized
+          ? const Center(child: CircularProgressIndicator())
+          : Consumer<ProductosProvider>(
+              builder: (context, productosProvider, child) {
+                if (productosProvider.isLoading && !_isInitialized) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (productosProvider.errorMessage != null) {
+                  return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
-                          Icons.inventory_2_outlined,
-                          size: 80,
-                          color: Colors.grey[400],
-                        ),
+                        const Icon(Icons.error_outline, size: 60, color: Colors.red),
                         const SizedBox(height: 16),
                         Text(
-                          'No hay productos en esta categoría',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey[600],
-                          ),
+                          productosProvider.errorMessage!,
+                          style: const TextStyle(fontSize: 16),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton.icon(
+                          onPressed: _cargarDatos,
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Reintentar'),
                         ),
                       ],
                     ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _productosFiltrados.length,
-                    itemBuilder: (context, index) {
-                      return ProductoCard(
-                        producto: _productosFiltrados[index],
-                      );
-                    },
-                  ),
-          ),
-        ],
-      ),
+                  );
+                }
+
+                return Column(
+                  children: [
+                    // Filtro de categorías
+                    _buildFiltroCategories(productosProvider.categorias),
+                    
+                    // Lista de productos
+                    Expanded(
+                      child: RefreshIndicator(
+                        onRefresh: _cargarDatos,
+                        child: _productosFiltrados.isEmpty
+                            ? Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.inventory_2_outlined,
+                                      size: 80,
+                                      color: Colors.grey[400],
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      'No hay productos disponibles',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: Colors.grey[600],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : ListView.builder(
+                                padding: const EdgeInsets.all(16),
+                                itemCount: _productosFiltrados.length,
+                                itemBuilder: (context, index) {
+                                  return ProductoCard(
+                                    producto: _productosFiltrados[index],
+                                  );
+                                },
+                              ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
     );
   }
 
-  Widget _buildFiltroCategories() {
-    final categorias = ['Todas', ...ProductosMock.obtenerCategorias()];
+  Widget _buildFiltroCategories(List<String> categorias) {
+    final categoriasConTodas = ['Todas', ...categorias];
 
     return Container(
       height: 50,
@@ -145,9 +208,9 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: categorias.length,
+        itemCount: categoriasConTodas.length,
         itemBuilder: (context, index) {
-          final categoria = categorias[index];
+          final categoria = categoriasConTodas[index];
           final isSeleccionada = (categoria == 'Todas' && _categoriaSeleccionada == null) ||
               categoria == _categoriaSeleccionada;
 
@@ -159,6 +222,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
               onSelected: (selected) {
                 setState(() {
                   _categoriaSeleccionada = categoria == 'Todas' ? null : categoria;
+                  _filtrarProductos();
                 });
               },
               selectedColor: Colors.blue[100],

@@ -1,5 +1,5 @@
 name: deber9
-description: "Sistema de carrito de compras con Flutter"
+description: "Sistema de carrito de compras con Flutter y Supabase"
 publish_to: 'none'
 
 version: 1.0.0+1
@@ -12,6 +12,11 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.8
   provider: ^6.1.1
+  # Supabase dependencies
+  supabase_flutter: ^2.5.0
+  # Utilidades adicionales
+  uuid: ^4.4.0
+  intl: ^0.19.0
 
 dev_dependencies:
   flutter_test:
