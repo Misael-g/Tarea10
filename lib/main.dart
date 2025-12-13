@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'config/supabase_config.dart';
+import 'providers/auth_provider.dart';
 import 'providers/carrito_provider.dart';
 import 'providers/productos_provider.dart';
+import 'screens/login_screen.dart';
 import 'screens/catalogo_screen.dart';
 
 void main() async {
@@ -25,6 +27,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => CarritoProvider()),
         ChangeNotifierProvider(create: (_) => ProductosProvider()),
       ],
@@ -41,7 +44,14 @@ class MyApp extends StatelessWidget {
             foregroundColor: Colors.white,
           ),
         ),
-        home: const CatalogoScreen(),
+        home: Consumer<AuthProvider>(
+          builder: (context, authProvider, _) {
+            // Si está logueado, ir al catálogo, si no, al login
+            return authProvider.isLoggedIn
+                ? const CatalogoScreen()
+                : const LoginScreen();
+          },
+        ),
       ),
     );
   }
