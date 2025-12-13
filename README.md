@@ -15,3 +15,8 @@ For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
 
+Environment variables
+---------------------
+
+Copy `.env.example` to `.env` and set your Supabase URL, anon key, and the reset/confirm URLs. `.env` is ignored by git so it won't be shared publicly.
+

@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 // RENOMBRADO: AuthException -> AuthServiceException
 class AuthServiceException implements Exception {
@@ -22,36 +23,38 @@ class AuthService {
   Stream<AuthState> get authStateChanges => _supabase.auth.onAuthStateChange;
 
   // REGISTRO de nuevo usuario
-  Future<User> signUp({
-    required String email,
-    required String password,
-    String? nombre,
-  }) async {
-    try {
-      final response = await _supabase.auth.signUp(
-        email: email,
-        password: password,
-        data: nombre != null ? {'nombre': nombre} : null,
-      );
+Future<User> signUp({
+  required String email,
+  required String password,
+  String? nombre,
+}) async {
+  try {
+    final confirmUrl = dotenv.env['CONFIRM_EMAIL_URL'];
+    final response = await _supabase.auth.signUp(
+      email: email,
+      password: password,
+      data: nombre != null ? {'nombre': nombre} : null,
+      emailRedirectTo: confirmUrl,
+    );
 
-      if (response.user == null) {
-        throw AuthServiceException('Error al crear la cuenta');
-      }
-
-      return response.user!;
-    } on AuthServiceException {
-      rethrow;
-    } catch (e) {
-      if (e.toString().contains('already registered')) {
-        throw AuthServiceException('Este correo ya está registrado');
-      } else if (e.toString().contains('Invalid email')) {
-        throw AuthServiceException('Correo electrónico inválido');
-      } else if (e.toString().contains('Password should be at least')) {
-        throw AuthServiceException('La contraseña debe tener al menos 6 caracteres');
-      }
-      throw AuthServiceException('Error al registrar: ${e.toString()}');
+    if (response.user == null) {
+      throw AuthServiceException('Error al crear la cuenta');
     }
+
+    return response.user!;
+  } on AuthServiceException {
+    rethrow;
+  } catch (e) {
+    if (e.toString().contains('already registered')) {
+      throw AuthServiceException('Este correo ya está registrado');
+    } else if (e.toString().contains('Invalid email')) {
+      throw AuthServiceException('Correo electrónico inválido');
+    } else if (e.toString().contains('Password should be at least')) {
+      throw AuthServiceException('La contraseña debe tener al menos 6 caracteres');
+    }
+    throw AuthServiceException('Error al registrar: ${e.toString()}');
   }
+}
 
   // LOGIN con email y contraseña
   Future<User> signIn({
@@ -90,17 +93,21 @@ class AuthService {
     }
   }
 
-  // ENVIAR EMAIL de restablecimiento de contraseña
-  Future<void> resetPassword(String email) async {
+// ENVIAR EMAIL de restablecimiento de contraseña
+Future<void> resetPassword(String email) async {
     try {
-      await _supabase.auth.resetPasswordForEmail(email);
-    } catch (e) {
-      if (e.toString().contains('not found')) {
-        throw AuthServiceException('No existe una cuenta con este correo');
-      }
-      throw AuthServiceException('Error al enviar correo: ${e.toString()}');
+    final redirectUrl = dotenv.env['RESET_PASSWORD_URL'];
+    await _supabase.auth.resetPasswordForEmail(
+      email,
+      redirectTo: redirectUrl,
+    );
+  } catch (e) {
+    if (e.toString().contains('not found')) {
+      throw AuthServiceException('No existe una cuenta con este correo');
     }
+    throw AuthServiceException('Error al enviar correo: ${e.toString()}');
   }
+}
 
   // ACTUALIZAR CONTRASEÑA
   Future<void> updatePassword(String newPassword) async {
