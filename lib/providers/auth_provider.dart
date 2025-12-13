@@ -20,7 +20,6 @@ class AuthProvider extends ChangeNotifier {
     _initAuth();
   }
 
-  // Inicializar y escuchar cambios de autenticación
   void _initAuth() {
     _user = _authService.currentUser;
     
@@ -49,7 +48,7 @@ class AuthProvider extends ChangeNotifier {
       _setLoading(false);
       notifyListeners();
       return true;
-    } on AuthException catch (e) {
+    } on AuthServiceException catch (e) {
       _setError(e.mensaje);
       _setLoading(false);
       return false;
@@ -77,7 +76,7 @@ class AuthProvider extends ChangeNotifier {
       _setLoading(false);
       notifyListeners();
       return true;
-    } on AuthException catch (e) {
+    } on AuthServiceException catch (e) {
       _setError(e.mensaje);
       _setLoading(false);
       return false;
@@ -99,7 +98,7 @@ class AuthProvider extends ChangeNotifier {
       _setLoading(false);
       notifyListeners();
       return true;
-    } on AuthException catch (e) {
+    } on AuthServiceException catch (e) {
       _setError(e.mensaje);
       _setLoading(false);
       return false;
@@ -119,7 +118,7 @@ class AuthProvider extends ChangeNotifier {
       await _authService.resetPassword(email);
       _setLoading(false);
       return true;
-    } on AuthException catch (e) {
+    } on AuthServiceException catch (e) {
       _setError(e.mensaje);
       _setLoading(false);
       return false;
@@ -139,7 +138,7 @@ class AuthProvider extends ChangeNotifier {
       await _authService.updatePassword(newPassword);
       _setLoading(false);
       return true;
-    } on AuthException catch (e) {
+    } on AuthServiceException catch (e) {
       _setError(e.mensaje);
       _setLoading(false);
       return false;
@@ -171,7 +170,7 @@ class AuthProvider extends ChangeNotifier {
       _setLoading(false);
       notifyListeners();
       return true;
-    } on AuthException catch (e) {
+    } on AuthServiceException catch (e) {
       _setError(e.mensaje);
       _setLoading(false);
       return false;
