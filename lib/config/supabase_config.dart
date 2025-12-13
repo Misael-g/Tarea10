@@ -1,10 +1,10 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 class SupabaseConfig {
-  // IMPORTANTE: Reemplaza estos valores con los de tu proyecto Supabase
-  // Los puedes encontrar en: Project Settings > API
-  static const String supabaseUrl = 'SUPABASE_URL';
-  static const String supabaseAnonKey = 'SUPABASE_ANON_KEY';
+  // Leer variables de entorno
+  static String get supabaseUrl => dotenv.env['SUPABASE_URL'] ?? '';
+  static String get supabaseAnonKey => dotenv.env['SUPABASE_ANON_KEY'] ?? '';
   
-  static const String resetPasswordUrl = 'https://mi_enlaceenvercel/reset-password';
   // Nombres de las tablas
   static const String productosTable = 'productos';
   static const String carritoTable = 'carrito';

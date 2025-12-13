@@ -1,5 +1,4 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../config/supabase_config.dart';
 
 class AuthException implements Exception {
   final String mensaje;
@@ -93,10 +92,9 @@ class AuthService {
   // ENVIAR EMAIL de restablecimiento de contraseña
   Future<void> resetPassword(String email) async {
     try {
-      await _supabase.auth.resetPasswordForEmail(
-        email,
-        redirectTo: SupabaseConfig.resetPasswordUrl,
-      );
+      // Envía el correo sin especificar redirectTo
+      // Supabase usará la URL configurada en el dashboard
+      await _supabase.auth.resetPasswordForEmail(email);
     } catch (e) {
       if (e.toString().contains('not found')) {
         throw AuthException('No existe una cuenta con este correo');

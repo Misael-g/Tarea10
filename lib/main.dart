@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'config/supabase_config.dart';
 import 'providers/auth_provider.dart';
 import 'providers/carrito_provider.dart';
@@ -10,6 +11,9 @@ import 'screens/catalogo_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Cargar variables de entorno
+  await dotenv.load(fileName: ".env");
   
   // Inicializar Supabase
   await Supabase.initialize(
@@ -46,7 +50,6 @@ class MyApp extends StatelessWidget {
         ),
         home: Consumer<AuthProvider>(
           builder: (context, authProvider, _) {
-            // Si está logueado, ir al catálogo, si no, al login
             return authProvider.isLoggedIn
                 ? const CatalogoScreen()
                 : const LoginScreen();
