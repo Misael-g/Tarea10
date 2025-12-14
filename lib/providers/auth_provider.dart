@@ -8,6 +8,9 @@ class AuthProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
   User? _user;
+  
+  // 🔥 NUEVO: Flag para ignorar cambios de auth durante el registro
+  bool _isRegistering = false;
 
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
@@ -24,9 +27,27 @@ class AuthProvider extends ChangeNotifier {
     _user = _authService.currentUser;
     
     _authService.authStateChanges.listen((AuthState state) {
+      // 🔥 NUEVO: Ignorar cambios de auth durante el registro
+      if (_isRegistering) {
+        return;
+      }
+      
       _user = state.session?.user;
       notifyListeners();
     });
+  }
+
+  void _setLoading(bool value) {
+    _isLoading = value;
+    notifyListeners();
+  }
+
+  void _setError(String? error) {
+    _errorMessage = error;
+  }
+
+  void _clearError() {
+    _errorMessage = null;
   }
 
 // REGISTRO
@@ -37,24 +58,37 @@ Future<bool> signUp({
 }) async {
   _setLoading(true);
   _clearError();
+  
+  // 🔥 NUEVO: Activar flag de registro
+  _isRegistering = true;
 
   try {
-    final user = await _authService.signUp(
+    await _authService.signUp(
       email: email,
       password: password,
       nombre: nombre,
     );
     
-    // 🔥 CAMBIO: NO establecer el usuario
+    // 🔥 NUEVO: Asegurar que el usuario NO esté establecido
+    _user = null;
     
     _setLoading(false);
+    
+    // 🔥 NUEVO: Desactivar flag después de un pequeño delay
+    // para dar tiempo a que se complete el signOut en el service
+    Future.delayed(const Duration(milliseconds: 500), () {
+      _isRegistering = false;
+    });
+    
     notifyListeners();
     return true;
   } on AuthServiceException catch (e) {
+    _isRegistering = false; // Desactivar flag en caso de error
     _setError(e.mensaje);
     _setLoading(false);
     return false;
   } catch (e) {
+    _isRegistering = false; // Desactivar flag en caso de error
     _setError('Error inesperado: $e');
     _setLoading(false);
     return false;
@@ -89,29 +123,16 @@ Future<bool> signUp({
     }
   }
 
-  // CERRAR SESIÓN
-  Future<bool> signOut() async {
+  // LOGOUT
+  Future<void> signOut() async {
     _setLoading(true);
-    _clearError();
-
-    try {
-      await _authService.signOut();
-      _user = null;
-      _setLoading(false);
-      notifyListeners();
-      return true;
-    } on AuthServiceException catch (e) {
-      _setError(e.mensaje);
-      _setLoading(false);
-      return false;
-    } catch (e) {
-      _setError('Error inesperado: $e');
-      _setLoading(false);
-      return false;
-    }
+    await _authService.signOut();
+    _user = null;
+    _setLoading(false);
+    notifyListeners();
   }
 
-  // RESTABLECER CONTRASEÑA
+  // RESET PASSWORD
   Future<bool> resetPassword(String email) async {
     _setLoading(true);
     _clearError();
@@ -129,76 +150,5 @@ Future<bool> signUp({
       _setLoading(false);
       return false;
     }
-  }
-
-  // ACTUALIZAR CONTRASEÑA
-  Future<bool> updatePassword(String newPassword) async {
-    _setLoading(true);
-    _clearError();
-
-    try {
-      await _authService.updatePassword(newPassword);
-      _setLoading(false);
-      return true;
-    } on AuthServiceException catch (e) {
-      _setError(e.mensaje);
-      _setLoading(false);
-      return false;
-    } catch (e) {
-      _setError('Error inesperado: $e');
-      _setLoading(false);
-      return false;
-    }
-  }
-
-  // OBTENER PERFIL
-  Future<Map<String, dynamic>?> getUserProfile() async {
-    try {
-      return await _authService.getUserProfile();
-    } catch (e) {
-      _setError('Error al obtener perfil: $e');
-      return null;
-    }
-  }
-
-  // ACTUALIZAR PERFIL
-  Future<bool> updateProfile({String? nombre}) async {
-    _setLoading(true);
-    _clearError();
-
-    try {
-      await _authService.updateProfile(nombre: nombre);
-      _user = _authService.currentUser;
-      _setLoading(false);
-      notifyListeners();
-      return true;
-    } on AuthServiceException catch (e) {
-      _setError(e.mensaje);
-      _setLoading(false);
-      return false;
-    } catch (e) {
-      _setError('Error inesperado: $e');
-      _setLoading(false);
-      return false;
-    }
-  }
-
-  void _setLoading(bool value) {
-    _isLoading = value;
-    notifyListeners();
-  }
-
-  void _setError(String message) {
-    _errorMessage = message;
-    notifyListeners();
-  }
-
-  void _clearError() {
-    _errorMessage = null;
-  }
-
-  void clearError() {
-    _clearError();
-    notifyListeners();
   }
 }
