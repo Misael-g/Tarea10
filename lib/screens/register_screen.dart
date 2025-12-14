@@ -28,58 +28,56 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  Future<void> _handleRegister() async {
-    if (!_formKey.currentState!.validate()) return;
+Future<void> _handleRegister() async {
+  if (!_formKey.currentState!.validate()) return;
 
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    
-    final success = await authProvider.signUp(
-      email: _emailController.text.trim(),
-      password: _passwordController.text,
-      nombre: _nombreController.text.trim(),
-    );
+  final authProvider = Provider.of<AuthProvider>(context, listen: false);
+  
+  final success = await authProvider.signUp(
+    email: _emailController.text.trim(),
+    password: _passwordController.text,
+    nombre: _nombreController.text.trim(),
+  );
 
-    if (!mounted) return;
+  if (!mounted) return;
 
-    if (success) {
-      // Mostrar mensaje de éxito
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => AlertDialog(
-          title: const Row(
-            children: [
-              Icon(Icons.check_circle, color: Colors.green, size: 28),
-              SizedBox(width: 12),
-              Text('¡Registro Exitoso!'),
-            ],
-          ),
-          content: const Text(
-            'Tu cuenta ha sido creada exitosamente. Revisa tu correo para confirmar tu cuenta.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Cerrar diálogo
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (_) => const CatalogoScreen()),
-                );
-              },
-              child: const Text('Continuar'),
-            ),
+  if (success) {
+    // Mostrar mensaje de éxito
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.green, size: 28),
+            SizedBox(width: 12),
+            Text('¡Registro Exitoso!'),
           ],
         ),
-      );
-    } else {
-      // Mostrar error
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(authProvider.errorMessage ?? 'Error al registrar'),
-          backgroundColor: Colors.red,
+        content: const Text(
+          'Tu cuenta ha sido creada exitosamente. Revisa tu correo para confirmar tu cuenta antes de iniciar sesión.',
         ),
-      );
-    }
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop(); // Cerrar diálogo
+              Navigator.of(context).pop(); // Volver al login
+            },
+            child: const Text('Ir al Login'),
+          ),
+        ],
+      ),
+    );
+  } else {
+    // Mostrar error
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(authProvider.errorMessage ?? 'Error al registrar'),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
+}
 
   @override
   Widget build(BuildContext context) {

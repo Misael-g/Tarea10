@@ -21,8 +21,8 @@ class AuthService {
 
   // Stream de cambios de autenticación
   Stream<AuthState> get authStateChanges => _supabase.auth.onAuthStateChange;
-
-  // REGISTRO de nuevo usuario
+  
+// REGISTRO de nuevo usuario
 Future<User> signUp({
   required String email,
   required String password,
@@ -40,6 +40,9 @@ Future<User> signUp({
     if (response.user == null) {
       throw AuthServiceException('Error al crear la cuenta');
     }
+
+    // 🔥 NUEVO: Cerrar sesión inmediatamente después del registro
+    await _supabase.auth.signOut();
 
     return response.user!;
   } on AuthServiceException {

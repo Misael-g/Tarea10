@@ -29,35 +29,37 @@ class AuthProvider extends ChangeNotifier {
     });
   }
 
-  // REGISTRO
-  Future<bool> signUp({
-    required String email,
-    required String password,
-    String? nombre,
-  }) async {
-    _setLoading(true);
-    _clearError();
+// REGISTRO
+Future<bool> signUp({
+  required String email,
+  required String password,
+  String? nombre,
+}) async {
+  _setLoading(true);
+  _clearError();
 
-    try {
-      final user = await _authService.signUp(
-        email: email,
-        password: password,
-        nombre: nombre,
-      );
-      _user = user;
-      _setLoading(false);
-      notifyListeners();
-      return true;
-    } on AuthServiceException catch (e) {
-      _setError(e.mensaje);
-      _setLoading(false);
-      return false;
-    } catch (e) {
-      _setError('Error inesperado: $e');
-      _setLoading(false);
-      return false;
-    }
+  try {
+    final user = await _authService.signUp(
+      email: email,
+      password: password,
+      nombre: nombre,
+    );
+    
+    // 🔥 CAMBIO: NO establecer el usuario
+    
+    _setLoading(false);
+    notifyListeners();
+    return true;
+  } on AuthServiceException catch (e) {
+    _setError(e.mensaje);
+    _setLoading(false);
+    return false;
+  } catch (e) {
+    _setError('Error inesperado: $e');
+    _setLoading(false);
+    return false;
   }
+}
 
   // LOGIN
   Future<bool> signIn({
